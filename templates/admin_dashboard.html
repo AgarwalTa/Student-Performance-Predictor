@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid admin-wrapper">
+  <div class="row flex-nowrap">
+    <!-- 🧭 Sidebar -->
+    <nav class="col-md-3 col-lg-2 d-md-block sidebar p-3 shadow">
+      <div class="text-center mb-4">
+        <h4 class="fw-bold text-primary">⚙️ Admin Console</h4>
+      </div>
+      <ul class="nav flex-column nav-pills">
+        <li class="nav-item mb-2"><a class="nav-link active" href="#" onclick="showTab('overview')">🏠 Overview</a></li>
+        <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showTab('performance')">📊 Performance</a></li>
+        <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showTab('users')">👥 User Insights</a></li>
+        <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showTab('reports')">📄 Reports</a></li>
+        <li class="nav-item mb-2"><a class="nav-link" href="#" onclick="showTab('model')">🧠 AI Insights</a></li>
+      </ul>
+    </nav>
+
+    <!-- 🧩 Main Content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 bg-light">
+
+      <!-- 🔹 OVERVIEW TAB -->
+      <div id="tab-overview" class="tab-content">
+        <h3 class="fw-bold text-primary mb-4">🏠 Dashboard Overview</h3>
+
+        <!-- 🔸 Top Stats -->
+        <div class="row g-4 mb-4 text-center">
+          <div class="col-md-3">
+            <div class="stat-card gradient-blue shadow">
+              <h6>👥 Total Users</h6>
+              <h3 class="count" data-target="{{ users|length }}">0</h3>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card gradient-green shadow">
+              <h6>🟢 Active Users</h6>
+              <h3 class="count" data-target="{{ users.values()|selectattr('status','equalto','active')|list|length }}">0</h3>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card gradient-purple shadow">
+              <h6>📈 Avg Score</h6>
+              {% set total = 0 %}{% set count = 0 %}
+              {% for u, recs in all_predictions.items() if u != 'admin' %}
+                {% for r in recs %}{% set total = total + r.predicted_score %}{% set count = count + 1 %}{% endfor %}
+              {% endfor %}
+              <h3 class="count" data-target="{{ (total/count)|round(1) if count>0 else 0 }}">0</h3>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card gradient-orange shadow">
+              <h6>🏆 Top Performer</h6>
+              {% set top_user='N/A' %}{% set top_score=0 %}
+              {% for u, recs in all_predictions.items() if u != 'admin' %}
+                {% if recs|length>0 and recs[-1].predicted_score>top_score %}
+                  {% set top_user=u %}{% set top_score=recs[-1].predicted_score %}
+                {% endif %}
+              {% endfor %}
+              <h5 class="text-light mt-2">{{ top_user }}</h5>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🔸 Secondary Insights -->
+        <div class="row g-4 mb-4 text-center">
+          <div class="col-md-4">
+            <div class="mini-card shadow-sm">
+              <h6>⚖️ Active vs Suspended</h6>
+              <p class="fw-bold text-success mb-0">
+                {{ users.values()|selectattr('status','equalto','active')|list|length }} / {{ users|length }}
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="mini-card shadow-sm">
+              <h6>🕓 Last Prediction Recorded</h6>
+              {% set last_time = "No Data" %}
+              {% for u, recs in all_predictions.items() if recs %}
+                {% set last_time = recs[-1].timestamp %}
+              {% endfor %}
+              <p class="fw-semibold text-muted small">{{ last_time }}</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="mini-card shadow-sm">
+              <h6>🎯 Average Participation</h6>
+              {% set total_p = 0 %}{% set total_users = 0 %}
+              {% for u, recs in all_predictions.items() if u != 'admin' %}
+                {% for r in recs %}{% set total_p = total_p + r.participation %}{% set total_users = total_users + 1 %}{% endfor %}
+              {% endfor %}
+              <p class="fw-bold text-info mb-0">{{ (total_p/total_users)|round(1) if total_users>0 else 0 }}%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🔸 Charts Row -->
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 rounded-4 chart-card">
+              <div class="card-body text-center">
+                <h5 class="fw-semibold mb-1 text-secondary">📊 Score Distribution</h5>
+                <div class="chart-wrapper d-flex justify-content-center">
+                  <canvas id="overallPieChart" style="max-width: 380px; height: 240px;"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 rounded-4 chart-card">
+              <div class="card-body text-center">
+                <h5 class="fw-semibold mb-1 text-secondary">📈 Overall Performance Trend</h5>
+                <div class="chart-wrapper">
+                  <canvas id="trendChart" style="height: 240px;"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔹 PERFORMANCE TAB -->
+      <div id="tab-performance" class="tab-content" style="display:none;">
+        <h3 class="fw-bold text-primary mb-4">📊 Performance Analytics</h3>
+        <div class="row g-4">
+          <div class="col-md-6"><canvas id="scatterChart" height="150"></canvas></div>
+          <div class="col-md-6"><canvas id="attendanceChart" height="150"></canvas></div>
+          <div class="col-md-6"><canvas id="avgBarChart" height="150"></canvas></div>
+          <div class="col-md-6"><canvas id="activityChart" height="150"></canvas></div>
+        </div>
+      </div>
+
+      <!-- 🔹 USER INSIGHTS TAB -->
+      <div id="tab-users" class="tab-content" style="display:none;">
+        <h3 class="fw-bold text-primary mb-4">👥 User Insights</h3>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle text-center rounded shadow-sm">
+            <thead class="table-dark">
+              <tr><th>#</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              {% for username, details in users.items() %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td class="fw-semibold">{{ username }}</td>
+                <td>{{ details.role }}</td>
+                <td>
+                  {% if details.status=="active" %}
+                    <span class="badge bg-success px-3 py-2">Active</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark px-3 py-2">Suspended</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if details.role!="admin" %}
+                    <form action="{{ url_for('delete_user', username=username) }}" method="post" class="d-inline">
+                      <button class="btn btn-sm btn-outline-danger">Delete</button></form>
+                    {% if details.status=="active" %}
+                      <form action="{{ url_for('suspend_user', username=username) }}" method="post" class="d-inline">
+                        <button class="btn btn-sm btn-outline-warning">Suspend</button></form>
+                    {% else %}
+                      <form action="{{ url_for('reactivate_user', username=username) }}" method="post" class="d-inline">
+                        <button class="btn btn-sm btn-outline-success">Reactivate</button></form>
+                    {% endif %}
+                  {% else %}
+                    <button class="btn btn-sm btn-secondary" disabled>Protected</button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 🔹 REPORTS TAB -->
+      <div id="tab-reports" class="tab-content" style="display:none;">
+        <h3 class="fw-bold text-primary mb-4">📄 Reports & Analytics</h3>
+        <div class="text-end mb-3">
+          <form action="{{ url_for('generate_reports') }}" method="post">
+            <button class="btn btn-primary btn-sm">🔁 Generate New PDF Reports</button>
+          </form>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="report-card shadow-sm">
+              <h6 class="text-secondary fw-semibold mb-2">📘 Predictions Report</h6>
+              <iframe src="{{ url_for('serve_reports', filename='predictions.pdf') }}" width="100%" height="400"></iframe>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="report-card shadow-sm">
+              <h6 class="text-secondary fw-semibold mb-2">👤 Users Report</h6>
+              <iframe src="{{ url_for('serve_reports', filename='users.pdf') }}" width="100%" height="400"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔹 MODEL INSIGHTS TAB -->
+      <div id="tab-model" class="tab-content" style="display:none;">
+        <h3 class="fw-bold text-primary mb-4">🧠 Model Insights</h3>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card shadow-sm p-3 mb-3">
+              <h6 class="fw-semibold text-secondary">Feature Importance</h6>
+              <canvas id="featureChart" height="150"></canvas>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card shadow-sm p-3 mb-3">
+              <h6 class="fw-semibold text-secondary">Model Summary</h6>
+              <ul class="list-group small">
+                <li class="list-group-item"><b>Algorithm:</b> Linear Regression</li>
+                <li class="list-group-item"><b>Features:</b> Study Hours, Sleep Hours, Attendance, etc.</li>
+                <li class="list-group-item"><b>Scaler:</b> StandardScaler()</li>
+                <li class="list-group-item"><b>Last Updated:</b> {{ now().strftime('%d %b %Y') }}</li>
+                <li class="list-group-item"><b>Pipeline File:</b> artifacts/pipeline.pkl</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 📊 Charts + Animations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let rawData = {{ all_predictions | safe }};
+let data = Object.fromEntries(Object.entries(rawData).filter(([k,v]) => k !== "admin"));
+let allScores = Object.values(data).flat();
+let scores = allScores.map(r=>r.predicted_score||0);
+
+const tabs = ["overview","performance","users","reports","model"];
+function showTab(tab) {
+  tabs.forEach(t => {
+    document.getElementById(`tab-${t}`)?.style?.setProperty("display","none");
+    document.querySelector(`a.nav-link[onclick*="${t}"]`)?.classList?.remove("active");
+  });
+  document.getElementById(`tab-${tab}`).style.display = "block";
+  document.querySelector(`a.nav-link[onclick*="${tab}"]`).classList.add("active");
+  if(tab==="performance" && !window.performanceLoaded){ renderPerformanceCharts(); window.performanceLoaded=true; }
+}
+
+// Animated Counters
+document.querySelectorAll(".count").forEach(counter => {
+  const update = () => {
+    const target = +counter.getAttribute("data-target");
+    const count = +counter.innerText;
+    const inc = target / 50;
+    if(count < target) {
+      counter.innerText = Math.ceil(count + inc);
+      setTimeout(update, 15);
+    } else counter.innerText = target;
+  };
+  update();
+});
+
+// Donut Chart
+if(document.getElementById("overallPieChart")){
+  new Chart(document.getElementById("overallPieChart"),{
+    type:"doughnut",
+    data:{labels:["High (≥85)","Medium (70–84)","Low (<70)"],
+      datasets:[{data:[
+        scores.filter(s=>s>=85).length,
+        scores.filter(s=>s>=70&&s<85).length,
+        scores.filter(s=>s<70).length
+      ],backgroundColor:["#22c55e","#eab308","#ef4444"],borderColor:"#fff",borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,cutout:"70%",plugins:{legend:{position:"bottom"}}}
+  });
+}
+
+// Trendline Chart
+if(document.getElementById("trendChart")){
+  const sortedScores = [...scores].slice(-20);
+  new Chart(document.getElementById("trendChart"),{
+    type:"line",
+    data:{labels:sortedScores.map((_,i)=>i+1),
+          datasets:[{label:"Recent Predictions",data:sortedScores,borderColor:"#3b82f6",tension:0.4,fill:false}]},
+    options:{scales:{y:{beginAtZero:true,max:100}},plugins:{legend:{display:false}}}
+  });
+}
+
+// Lazy-loaded charts
+function renderPerformanceCharts(){
+  const studies = allScores.map(r=>r.study_hours||0);
+  const attendance = allScores.map(r=>r.attendance||0);
+  if(document.getElementById("scatterChart")){
+    new Chart(document.getElementById("scatterChart"),{type:"scatter",data:{datasets:[{label:"Study vs Score",data:allScores.map(r=>({x:r.study_hours,y:r.predicted_score})),backgroundColor:"rgba(37,99,235,0.6)"}]},options:{scales:{x:{title:{display:true,text:"Study Hours"}},y:{title:{display:true,text:"Score"}}}}});
+  }
+  if(document.getElementById("attendanceChart")){
+    new Chart(document.getElementById("attendanceChart"),{type:"line",data:{labels:attendance,datasets:[{label:"Attendance vs Score",data:scores,borderColor:"#14b8a6",tension:0.3}]},options:{scales:{x:{title:{display:true,text:"Attendance"}},y:{title:{display:true,text:"Score"}}}}});
+  }
+  const avgByUser = Object.entries(data).map(([u,rec])=>({user:u,avg:rec.reduce((a,b)=>a+b.predicted_score,0)/(rec.length||1)}));
+  if(document.getElementById("avgBarChart")){
+    new Chart(document.getElementById("avgBarChart"),{type:"bar",data:{labels:avgByUser.map(x=>x.user),datasets:[{data:avgByUser.map(x=>x.avg),backgroundColor:"rgba(147,51,234,0.6)"}]},options:{indexAxis:"y",plugins:{legend:{display:false}}}});
+  }
+  const activityCounts = Object.entries(data).map(([u,r])=>r.length);
+  if(document.getElementById("activityChart")){
+    new Chart(document.getElementById("activityChart"),{type:"bar",data:{labels:Object.keys(data),datasets:[{data:activityCounts,backgroundColor:"rgba(234,88,12,0.7)"}]},options:{plugins:{legend:{display:false}}}});
+  }
+  if(document.getElementById("featureChart")){
+    new Chart(document.getElementById("featureChart"),{type:"bar",data:{labels:["Study Hours","Sleep Hours","Attendance","Prev Grades","Participation","Assignments"],datasets:[{data:[0.35,0.15,0.2,0.1,0.08,0.12],backgroundColor:"rgba(23,162,184,0.8)"}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:0.5}}}});
+  }
+}
+</script>
+
+<!-- ✨ CSS -->
+<style>
+body { background-color: #f8fafc; }
+.sidebar {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #1e293b, #0f172a);
+  border-right: 2px solid #334155;
+  color: #e2e8f0;
+}
+.sidebar h4 { color: #93c5fd !important; }
+.sidebar .nav-link { color: #cbd5e1; border-radius: 12px; transition: 0.3s; padding: 10px 15px; font-weight: 500; }
+.sidebar .nav-link:hover { background-color: #334155; color: #60a5fa; }
+.sidebar .nav-link.active { background-color: #2563eb; color: #fff; box-shadow: 0 0 10px rgba(59,130,246,0.4); }
+
+.stat-card { border-radius: 16px; padding: 20px; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+.gradient-blue { background: linear-gradient(135deg, #2563eb, #1e40af); }
+.gradient-green { background: linear-gradient(135deg, #059669, #065f46); }
+.gradient-purple { background: linear-gradient(135deg, #7e22ce, #581c87); }
+.gradient-orange { background: linear-gradient(135deg, #ea580c, #9a3412); }
+
+.mini-card { background: white; border-radius: 14px; padding: 15px; transition: 0.2s; }
+.mini-card:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+.chart-card { background: #fff; border-radius: 18px; transition: 0.3s; }
+.chart-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+
+.report-card { background: #ffffff; border-radius: 16px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+iframe { border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.08); }
+
+.tab-content { animation: fadeIn 0.5s ease; margin-bottom: 40px; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+{% endblock %}

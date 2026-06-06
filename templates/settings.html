@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="max-width:600px;" id="settings-container">
+    <h3>⚡ System Settings</h3>
+    <form method="POST" id="settings-form">
+        <div class="mb-3">
+            <label>Theme:</label>
+            <select name="theme" class="form-select" id="themeSelect">
+                <option value="light" {% if settings.theme=="light" %}selected{% endif %}>Light</option>
+                <option value="dark" {% if settings.theme=="dark" %}selected{% endif %}>Dark</option>
+            </select>
+        </div>
+        <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="notifications" name="notifications" {% if settings.notifications %}checked{% endif %}>
+            <label class="form-check-label" for="notifications">Enable Notifications</label>
+        </div>
+        <div class="mb-3">
+            <label>Max Predictions per User:</label>
+            <input type="number" name="max_predictions" class="form-control" value="{{ settings.max_predictions_per_user }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Grab container and theme selector
+    const container = document.getElementById('settings-container');
+    const themeSelect = document.getElementById('themeSelect');
+
+    // Function to switch page theme dynamically
+    function switchTheme(theme) {
+        if(theme === 'dark') {
+            document.body.classList.add('bg-dark', 'text-light');
+            container.classList.add('bg-secondary', 'text-light', 'p-3', 'rounded');
+        } else {
+            document.body.classList.remove('bg-dark', 'text-light');
+            container.classList.remove('bg-secondary', 'text-light', 'p-3', 'rounded');
+        }
+    }
+
+    // Initial theme on page load
+    switchTheme(themeSelect.value);
+
+    // Update theme when dropdown changes
+    themeSelect.addEventListener('change', (e) => {
+        switchTheme(e.target.value);
+    });
+</script>
+{% endblock %}

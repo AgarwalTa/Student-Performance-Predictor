@@ -1,0 +1,127 @@
+/* admin_panel.css */
+
+/* ---------------- Sidebar ---------------- */
+.sidebar {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    border-right: 1px solid #dee2e6;
+    padding-top: 20px;
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link {
+    color: #495057;
+    font-weight: 500;
+    padding: 12px 20px;
+    transition: 0.3s;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #e9ecef;
+    color: #0d6efd;
+    border-radius: 8px;
+}
+
+.sidebar .nav-link.active {
+    background-color: #0d6efd;
+    color: #fff;
+    border-radius: 8px;
+}
+
+/* ---------------- Main Content ---------------- */
+main {
+    padding: 20px 30px;
+    background-color: #f1f3f5;
+    min-height: 100vh;
+}
+
+/* Cards for tab content */
+.tab-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+/* Tables */
+.table-hover tbody tr:hover {
+    background-color: #f1f3f5;
+    cursor: pointer;
+}
+
+.table th, .table td {
+    vertical-align: middle;
+}
+
+/* ---------------- Buttons ---------------- */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+}
+
+.btn-success:hover {
+    background-color: #198754;
+}
+
+.btn-secondary[disabled] {
+    opacity: 0.7;
+}
+
+/* ---------------- Chart ---------------- */
+#adminUserChart {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* ---------------- System Logs ---------------- */
+pre {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.9rem;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+/* ---------------- Inputs & Selects ---------------- */
+input, select, textarea {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s ease;
+    padding: 6px 10px;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 5px rgba(13,110,253,0.3);
+    outline: none;
+}
+
+/* ---------------- Misc ---------------- */
+h5, h4, h2 {
+    margin-bottom: 15px;
+}
+
+.mt-3 {
+    margin-top: 1rem !important;
+}
+.mt-4 {
+    margin-top: 1.5rem !important;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}

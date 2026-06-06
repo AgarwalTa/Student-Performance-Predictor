@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+
+  <!-- 🧑‍🎓 Welcome -->
+  <h2 class="text-center mb-4 fw-bold text-primary">🎓 Welcome, {{ username }}!</h2>
+
+  <!-- 🌟 Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-3">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} shadow-sm">
+            {{ message|safe }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- 🔮 Prediction Form -->
+  <div class="card shadow-sm border-0 mb-5">
+    <div class="card-body">
+      <h4 class="text-primary mb-3">🔮 Make a New Prediction</h4>
+      <form action="{{ url_for('predict') }}" method="POST" id="predictionForm">
+        <div class="row g-4">
+
+          <!-- Study Hours -->
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label fw-semibold">📚 Study Hours (0–16 hrs/day)</label>
+            <input type="range" class="form-range" min="0" max="16" step="0.5" value="0" id="study_slider" oninput="updateValue('study_val', this.value)">
+            <input type="number" name="study_hours" id="study_val" class="form-control" min="0" max="16" step="0.5" required>
+          </div>
+
+          <!-- Sleep Hours -->
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label fw-semibold">💤 Sleep Hours (0–16 hrs/day)</label>
+            <input type="range" class="form-range" min="0" max="16" step="0.5" value="8" id="sleep_slider" oninput="updateValue('sleep_val', this.value)">
+            <input type="number" name="sleep_hours" id="sleep_val" class="form-control" min="0" max="16" step="0.5" required>
+          </div>
+
+          <!-- Attendance -->
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label fw-semibold">🎯 Attendance (%) (0–100)</label>
+            <input type="range" class="form-range" min="0" max="100" step="1" value="80" id="attendance_slider" oninput="updateValue('attendance_val', this.value)">
+            <input type="number" name="attendance" id="attendance_val" class="form-control" min="0" max="100" step="1" required>
+          </div>
+
+          <!-- Previous Grades -->
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label fw-semibold">📘 Previous Grades (0–100)</label>
+            <input type="range" class="form-range" min="0" max="100" step="1" value="0" id="prev_slider" oninput="updateValue('prev_val', this.value)">
+            <input type="number" name="prev_grades" id="prev_val" class="form-control" min="0" max="100" step="1">
+          </div>
+
+          <!-- Participation -->
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label fw-semibold">🗣️ Class Participation (0–10)</label>
+            <input type="range" class="form-range" min="0" max="10" step="1" value="0" id="part_slider" oninput="updateValue('part_val', this.value)">
+            <input type="number" name="participation" id="part_val" class="form-control" min="0" max="10" step="1">
+          </div>
+
+          <!-- Assignments Completed -->
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label fw-semibold">📝 Assignments Completed (0–50)</label>
+            <input type="range" class="form-range" min="0" max="50" step="1" value="0" id="assign_slider" oninput="updateValue('assign_val', this.value)">
+            <input type="number" name="assignments_completed" id="assign_val" class="form-control" min="0" max="50" step="1">
+          </div>
+
+          <!-- Revision Hours -->
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label fw-semibold">📖 Revision Hours (0–16 hrs/week)</label>
+            <input type="range" class="form-range" min="0" max="16" step="0.5" value="0" id="rev_slider" oninput="updateValue('rev_val', this.value)">
+            <input type="number" name="revision_hours" id="rev_val" class="form-control" min="0" max="16" step="0.5">
+          </div>
+
+          <!-- Extracurricular Hours -->
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label fw-semibold">⚽ Extracurricular Hours (0–10 hrs/week)</label>
+            <input type="range" class="form-range" min="0" max="10" step="0.5" value="0" id="extra_slider" oninput="updateValue('extra_val', this.value)">
+            <input type="number" name="extracurricular_hours" id="extra_val" class="form-control" min="0" max="10" step="0.5">
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <button type="submit" class="btn btn-primary px-4"
+            {% if remaining_predictions == 0 %}disabled{% endif %}>
+            🔮 Predict Score
+          </button>
+          {% if remaining_predictions == 0 %}
+            <span class="text-danger small">Daily prediction limit reached.</span>
+          {% else %}
+            <span class="text-muted small">{{ remaining_predictions }} predictions left today.</span>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 💬 Motivational Message -->
+  <div class="alert alert-info text-center shadow-sm mb-4">
+    {% if remaining_predictions > 0 %}
+      🚀 Adjust the sliders and predict your next performance with confidence!
+    {% else %}
+      🌙 Great job! You’ve reached your daily limit. Try again tomorrow.
+    {% endif %}
+  </div>
+
+  <!-- 📊 Charts Section -->
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="card p-3 shadow-sm">
+        <h5>📈 Study Hours vs Predicted Score</h5>
+        <canvas id="studyChart"></canvas>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="card p-3 shadow-sm">
+        <h5>💤 Sleep Hours vs Predicted Score</h5>
+        <canvas id="sleepChart"></canvas>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="card p-3 shadow-sm">
+        <h5>🎯 Attendance vs Predicted Score</h5>
+        <canvas id="attendanceChart"></canvas>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="card p-3 shadow-sm">
+        <h5>📊 Performance Distribution</h5>
+        <canvas id="pieChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📜 Prediction History -->
+  <div class="card shadow-sm border-0 mt-5">
+    <div class="card-body">
+      <h4 class="text-primary mb-3">📜 Prediction History</h4>
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle text-center mb-0">
+          {{ history | safe }}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🎚️ Slider Sync -->
+<script>
+function updateValue(id, value) {
+  document.getElementById(id).value = value;
+}
+</script>
+
+<!-- 📈 Chart.js Visualization -->
+<script>
+fetch("/chart_data")
+  .then(response => response.json())
+  .then(data => {
+    const study = data.map(d => d.study_hours);
+    const sleep = data.map(d => d.sleep_hours);
+    const attendance = data.map(d => d.attendance);
+    const scores = data.map(d => d.predicted_score);
+
+    // Line Chart: Study vs Score
+    new Chart(document.getElementById("studyChart"), {
+      type: "line",
+      data: {
+        labels: study,
+        datasets: [{
+          label: "Predicted Score",
+          data: scores,
+          borderColor: "#007bff",
+          borderWidth: 2,
+          fill: false,
+          tension: 0.3
+        }]
+      },
+      options: { plugins: { legend: { display: false } } }
+    });
+
+    // Bar Chart: Sleep vs Score
+    new Chart(document.getElementById("sleepChart"), {
+      type: "bar",
+      data: {
+        labels: sleep,
+        datasets: [{
+          label: "Predicted Score",
+          data: scores,
+          backgroundColor: "rgba(54,162,235,0.7)"
+        }]
+      },
+      options: { plugins: { legend: { display: false } } }
+    });
+
+    // Scatter: Attendance vs Score
+    new Chart(document.getElementById("attendanceChart"), {
+      type: "scatter",
+      data: {
+        datasets: [{
+          label: "Predicted Score",
+          data: attendance.map((a, i) => ({ x: a, y: scores[i] })),
+          backgroundColor: "rgba(255,99,132,0.8)"
+        }]
+      },
+      options: { plugins: { legend: { display: false } } }
+    });
+
+    // Pie: Performance Distribution
+    const high = scores.filter(s => s >= 85).length;
+    const medium = scores.filter(s => s >= 70 && s < 85).length;
+    const low = scores.filter(s => s < 70).length;
+
+    new Chart(document.getElementById("pieChart"), {
+      type: "pie",
+      data: {
+        labels: ["High (≥85)", "Medium (70–84)", "Low (<70)"],
+        datasets: [{
+          data: [high, medium, low],
+          backgroundColor: ["#28a745", "#ffc107", "#dc3545"]
+        }]
+      },
+      options: { plugins: { legend: { position: "bottom" } } }
+    });
+  });
+</script>
+{% endblock %}

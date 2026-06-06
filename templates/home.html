@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<section class="text-center py-5">
+    <div class="container">
+        <div class="mx-auto" style="max-width: 650px;">
+            <h1 class="fw-bold mb-3 display-5 text-primary">
+                🎓 Welcome to <span class="text-dark">Student App</span>
+            </h1>
+            <p class="lead text-secondary">
+                Predict your exam scores based on your study habits and get personalized insights to improve your performance.
+            </p>
+
+            <div class="mt-4 d-flex justify-content-center gap-3">
+                <a class="btn btn-lg btn-primary shadow-sm px-4" href="{{ url_for('login') }}">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                </a>
+                <a class="btn btn-lg btn-success shadow-sm px-4" href="{{ url_for('register') }}">
+                    <i class="bi bi-person-plus me-2"></i>Register
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-light border-top border-bottom">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <div class="p-4 rounded shadow-sm bg-white h-100">
+                    <i class="bi bi-graph-up-arrow text-primary display-5 mb-3"></i>
+                    <h5 class="fw-semibold">Smart Predictions</h5>
+                    <p class="text-muted">Get accurate predictions of your exam performance using machine learning.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="p-4 rounded shadow-sm bg-white h-100">
+                    <i class="bi bi-clock-history text-success display-5 mb-3"></i>
+                    <h5 class="fw-semibold">Track Progress</h5>
+                    <p class="text-muted">Visualize your performance trends over time and identify areas to improve.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="p-4 rounded shadow-sm bg-white h-100">
+                    <i class="bi bi-lightbulb text-warning display-5 mb-3"></i>
+                    <h5 class="fw-semibold">Personalized Insights</h5>
+                    <p class="text-muted">Receive tailored recommendations to enhance your study and sleep balance.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action -->
+<section class="py-5 text-center bg-gradient" style="background: linear-gradient(90deg, #007bff, #00c851); color: white;">
+    <div class="container">
+        <h2 class="fw-bold mb-3">Start Your Academic Journey Today</h2>
+        <p class="mb-4 fs-5">Join now and unlock personalized predictions and performance analytics.</p>
+        <a href="{{ url_for('register') }}" class="btn btn-light btn-lg fw-semibold shadow-sm">
+            Get Started <i class="bi bi-arrow-right ms-2"></i>
+        </a>
+    </div>
+</section>
+{% endblock %}
